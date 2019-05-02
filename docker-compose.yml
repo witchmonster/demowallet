@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'walletdb'
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_USER: 'wallet'
+      MYSQL_PASSWORD: 'demo'
+    ports:
+      - "3306:3306"
+    expose:
+      - '3306'
+    volumes:
+      - walletdb:/var/lib/mysql
+#  demowallet-server-app:
+#    image: demowallet-server-app:1
+#    build:
+#      context: demowallet-server
+#      dockerfile: Dockerfile
+#    links:
+#      - mysql
+#    volumes:
+#      - /data/demowallet-server-app
+#    ports:
+#      - "8081:8081"
+#  demowallet-client-app:
+#    image: demowallet-client-app:1
+#    build:
+#      context: demowallet-client
+#      dockerfile: Dockerfile
+#    volumes:
+#      - /data/demowallet-client-app
+#    ports:
+#      - "8082:8082"
+volumes:
+  walletdb:

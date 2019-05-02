@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_package = "com.jkramr.demowalletapi.grpc";
+
+import "common.proto";
+
+service WithdrawService {
+    rpc WithdrawFunds (WithdrawRequest) returns (WithdrawResponse) {}
+}
+
+message WithdrawRequest {
+    int32 user_id = 1;
+    double amount = 2;
+    Currency currency = 3;
+}
+
+message WithdrawResponse {
+    enum Error {
+        INSUFFICIENT_FUNDS = 0;
+        UNKNOWN_CURRENCY = 1;
+    }
+    Error error = 1;
+    string debugMessage = 2;
+}

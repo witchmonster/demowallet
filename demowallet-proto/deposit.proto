@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_package = "com.jkramr.demowalletapi.grpc";
+
+import "common.proto";
+
+service DepositService {
+    rpc DepositFunds (DepositRequest) returns (DepositResponse) {}
+}
+
+message DepositRequest {
+    int32 user_id = 1;
+    double amount = 2;
+    Currency currency = 3;
+}
+
+message DepositResponse {
+    enum Error {
+        UNKNOWN_CURRENCY = 0;
+    }
+    Error error = 1;
+    string debugMessage = 2;
+}

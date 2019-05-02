@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_package = "com.jkramr.demowalletapi.grpc";
+
+import "common.proto";
+
+service BalanceService {
+    rpc GetBalance (BalanceRequest) returns (BalanceResponse) {}
+}
+
+message BalanceRequest {
+    int32 user_id = 1;
+}
+
+message WalletBalance {
+    Currency currency = 1;
+    double amount = 2;
+}
+
+message BalanceResponse {
+    repeated WalletBalance balanceInfo = 1;
+    string debugMessage = 2;
+}

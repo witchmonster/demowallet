@@ -1,0 +1,8 @@
+pluginManagement {
+	repositories {
+		gradlePluginPortal()
+	}
+}
+rootProject.name = 'demowallet'
+
+include ':demowallet-api-java', ':demowallet-client', ':demowallet-server'
