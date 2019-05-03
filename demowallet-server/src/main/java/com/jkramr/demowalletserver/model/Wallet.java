@@ -1,7 +1,5 @@
 package com.jkramr.demowalletserver.model;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -10,13 +8,35 @@ import java.util.Date;
 
 @Entity
 @Table(name = "wallet", indexes = {@Index(name = "wallet_user_id_currency_idx", columnList = "user_id,currency", unique = true)})
-@Data
-@EqualsAndHashCode(of = "id")
 public class Wallet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Integer id;
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        this.currency = currency;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
 
     @Column(name = "created", updatable = false)
     @Temporal(TemporalType.TIMESTAMP)

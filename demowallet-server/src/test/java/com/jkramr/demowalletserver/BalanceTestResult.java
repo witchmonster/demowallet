@@ -2,10 +2,8 @@ package com.jkramr.demowalletserver;
 
 import com.jkramr.demowalletapi.grpc.Balance;
 import com.jkramr.demowalletapi.model.Common;
-import lombok.Data;
 import org.junit.Assert;
 
-@Data
 class BalanceTestResult {
     private Balance.BalanceResponse response;
 
@@ -27,11 +25,11 @@ class BalanceTestResult {
     class BalanceValidator {
         private Balance.WalletBalance balanceInfoForCurrency;
 
-        public BalanceValidator(Balance.WalletBalance balanceInfoForCurrency) {
+        BalanceValidator(Balance.WalletBalance balanceInfoForCurrency) {
             this.balanceInfoForCurrency = balanceInfoForCurrency;
         }
 
-        public BalanceAssertableTestResult amountEquals(double amount) {
+        BalanceAssertableTestResult amountEquals(double amount) {
             Assert.assertNotNull(balanceInfoForCurrency);
             Assert.assertEquals(amount, balanceInfoForCurrency.getAmount(), 0);
             return parent();
@@ -43,11 +41,11 @@ class BalanceTestResult {
     }
 
     class BalanceAssertableTestResult extends BalanceTestResult {
-        public BalanceAssertableTestResult(Balance.BalanceResponse response) {
+        BalanceAssertableTestResult(Balance.BalanceResponse response) {
             super(response);
         }
 
-        public void assertBalances() {
+        void assertBalances() {
         }
     }
 }

@@ -1,10 +1,8 @@
 package com.jkramr.demowalletserver;
 
 import com.jkramr.demowalletapi.grpc.Withdraw;
-import lombok.Data;
 import org.junit.Assert;
 
-@Data
 class WithdrawTestResult {
     private Withdraw.WithdrawResponse response;
 

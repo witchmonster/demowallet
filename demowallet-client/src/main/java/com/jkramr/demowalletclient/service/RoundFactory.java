@@ -1,14 +1,12 @@
 package com.jkramr.demowalletclient.service;
 
 import com.jkramr.demowalletapi.model.Common;
-import lombok.Data;
 import org.springframework.stereotype.Component;
 
-@Data
 @Component
 public class RoundFactory {
 
-    public Round getRound(GrpcChannel channel) {
+    Round getRound(GrpcChannel channel) {
         int random = (int) (Math.random() * 3) + 1;
         switch (random) {
             case 1: return new RoundA(channel);
@@ -20,7 +18,7 @@ public class RoundFactory {
 
     public class RoundA extends Round {
 
-        public RoundA(GrpcChannel channel) {
+        RoundA(GrpcChannel channel) {
             super(channel);
         }
 
@@ -37,7 +35,7 @@ public class RoundFactory {
 
     public class RoundB extends Round {
 
-        public RoundB(GrpcChannel channel) {
+        RoundB(GrpcChannel channel) {
             super(channel);
         }
 
@@ -52,7 +50,7 @@ public class RoundFactory {
 
     public class RoundC extends Round {
 
-        public RoundC(GrpcChannel channel) {
+        RoundC(GrpcChannel channel) {
             super(channel);
         }
 
@@ -68,13 +66,12 @@ public class RoundFactory {
         }
     }
 
-    @Data
     public abstract class Round {
-        public Round(GrpcChannel channel) {
+        Round(GrpcChannel channel) {
             this.channel = channel;
         }
 
-        protected GrpcChannel channel;
+        GrpcChannel channel;
 
         public abstract void run(int userId);
     }
