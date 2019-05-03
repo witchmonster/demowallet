@@ -4,3 +4,5 @@ pluginManagement {
 	}
 }
 rootProject.name = 'demowallet-server'
+include ":demowallet-api-java"
+project(':demowallet-api-java').projectDir = new File(settingsDir, '../demowallet-api-java')

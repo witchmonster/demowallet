@@ -41,13 +41,13 @@ protobuf {
 			grpc {}
 		}
 	}
-	generatedFilesBaseDir = "$projectDir/src"
+	generatedFilesBaseDir = "$projectDir/build/classes"
 }
 
 sourceSets {
 	main {
 		proto {
-			srcDir "../demowallet-proto"
+			srcDir "$projectDir/src/proto"
 		}
 	}
 }
