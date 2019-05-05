@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_package = "com.jkramr.demowalletapi.grpc";
+
+service RegisterService {
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+}
+
+message RegisterRequest {
+    int32 user_id = 1;
+}
+
+message RegisterResponse {
+    string debugMessage = 2;
+}

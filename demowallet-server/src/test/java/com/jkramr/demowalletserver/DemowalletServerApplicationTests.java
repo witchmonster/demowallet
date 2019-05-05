@@ -2,11 +2,8 @@ package com.jkramr.demowalletserver;
 
 import com.jkramr.demowalletapi.grpc.*;
 import com.jkramr.demowalletapi.model.Common;
-import com.jkramr.demowalletserver.model.User;
-import com.jkramr.demowalletserver.repository.UserRepository;
 import com.jkramr.demowalletserver.repository.WalletRepository;
 import net.devh.boot.grpc.client.inject.GrpcClient;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,26 +17,26 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class DemowalletServerApplicationTests {
 
     @GrpcClient("wallet")
-    BalanceServiceGrpc.BalanceServiceBlockingStub balanceStub;
+    private RegisterServiceGrpc.RegisterServiceBlockingStub registerStub;
 
     @GrpcClient("wallet")
-    DepositServiceGrpc.DepositServiceBlockingStub depositStub;
+    private BalanceServiceGrpc.BalanceServiceBlockingStub balanceStub;
 
     @GrpcClient("wallet")
-    WithdrawServiceGrpc.WithdrawServiceBlockingStub withdrawStub;
+    private DepositServiceGrpc.DepositServiceBlockingStub depositStub;
 
-    @Autowired
-    UserRepository userRepository;
+    @GrpcClient("wallet")
+    private WithdrawServiceGrpc.WithdrawServiceBlockingStub withdrawStub;
 
     @Autowired
     WalletRepository walletRepository;
 
     @Before
-    public void setUp() throws Exception {
-        //given there's no registration method described in the task, I assume numberOfUsers are already registered and exist in db
-        userRepository.save(new User(1));
-        userRepository.save(new User(2));
+    public void setUp() {
+        //given there's no registration method described in the Task, I assume users are registered prior to any task execution
         walletRepository.deleteAll();
+        registerStub.register(Register.RegisterRequest.newBuilder().setUserId(1).build());
+        registerStub.register(Register.RegisterRequest.newBuilder().setUserId(2).build());
     }
 
     @Test
@@ -72,8 +69,11 @@ public class DemowalletServerApplicationTests {
 
     @Test
     public void givenNoWalletGetBalanceShouldReturnEmptyResult() {
-        Balance.BalanceResponse balance = balanceStub.getBalance(Balance.BalanceRequest.newBuilder().setUserId(1).build());
-        Assert.assertEquals(Balance.BalanceResponse.newBuilder().build(), balance);
+        getBalance(1)
+                .forCurrency(Common.Currency.USD).amountEquals(0)
+                .forCurrency(Common.Currency.EUR).amountEquals(0)
+                .forCurrency(Common.Currency.GBP).amountEquals(0)
+                .assertBalances();
     }
 
     @Test

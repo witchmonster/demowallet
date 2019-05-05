@@ -5,47 +5,48 @@ import com.jkramr.demowalletapi.model.Common;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class GrpcChannel {
 
-    @GrpcClient("wallet")
+    @GrpcClient("local")
+    private RegisterServiceGrpc.RegisterServiceBlockingStub registerService;
+    @GrpcClient("local")
     private WithdrawServiceGrpc.WithdrawServiceBlockingStub withdrawService;
-    @GrpcClient("wallet")
+    @GrpcClient("local")
     private BalanceServiceGrpc.BalanceServiceBlockingStub balanceService;
-    @GrpcClient("wallet")
+    @GrpcClient("local")
     private DepositServiceGrpc.DepositServiceBlockingStub depositService;
 
 
-    boolean deposit(int userId, Common.Currency currency, double amount) {
+    void deposit(int userId, Common.Currency currency, double amount) {
         Deposit.DepositRequest request = Deposit.DepositRequest.newBuilder()
                 .setUserId(userId)
                 .setCurrency(currency)
                 .setAmount(amount)
                 .build();
-        Deposit.DepositResponse response = depositService.depositFunds(request);
-
-        return response.getError() == null;
+        depositService.depositFunds(request);
     }
 
-    boolean withdraw(int userId, Common.Currency currency, double amount) {
+    void withdraw(int userId, Common.Currency currency, double amount) {
         Withdraw.WithdrawRequest request = Withdraw.WithdrawRequest.newBuilder()
                 .setUserId(userId)
                 .setCurrency(currency)
                 .setAmount(amount)
                 .build();
-        Withdraw.WithdrawResponse response = withdrawService.withdrawFunds(request);
-
-        return response.getError() == null;
+        withdrawService.withdrawFunds(request);
     }
 
-    List<Balance.WalletBalance> getBalance(int userId) {
+    void getBalance(int userId) {
         Balance.BalanceRequest request = Balance.BalanceRequest.newBuilder()
                 .setUserId(userId)
                 .build();
-        Balance.BalanceResponse response = balanceService.getBalance(request);
+        balanceService.getBalance(request);
+    }
 
-        return response.getBalanceInfoList();
+    void register(int userId) {
+        Register.RegisterRequest request = Register.RegisterRequest.newBuilder()
+                .setUserId(userId)
+                .build();
+        registerService.register(request);
     }
 }

@@ -11,6 +11,6 @@ class DepositTestResult {
     }
 
     void assertSuccessful() {
-        Assert.assertEquals("ok", response.getDebugMessage());
+        Assert.assertEquals("Ok", response.getDebugMessage());
     }
 }

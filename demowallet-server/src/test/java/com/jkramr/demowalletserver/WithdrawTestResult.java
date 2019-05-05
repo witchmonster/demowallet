@@ -11,7 +11,7 @@ class WithdrawTestResult {
     }
 
     void assertSuccessful() {
-        Assert.assertEquals("ok", response.getDebugMessage());
+        Assert.assertEquals("Ok", response.getDebugMessage());
     }
 
     void assertInsufficientFunds() {

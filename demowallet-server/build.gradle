@@ -16,6 +16,8 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//	compile 'org.springframework.boot:spring-boot-starter-web'
+//	compile 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'mysql:mysql-connector-java'
 	compile 'net.devh:grpc-spring-boot-starter:2.3.0.RELEASE'
 	compile files('../demowallet-api-java/build/libs/demowallet-api-java-0.0.1.jar')

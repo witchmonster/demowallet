@@ -19,22 +19,39 @@ public class EmulatorService {
     private RoundFactory roundFactory;
     private GrpcChannel channel;
 
-    @Value( "${demowallet.client.users}" )
+    @Value("${demowallet.client.users}")
     private Integer numberOfUsers;
-    @Value( "${demowallet.client.concurrent_threads_per_user}" )
+    @Value("${demowallet.client.concurrent_threads_per_user}")
     private Integer threadsPerUser;
-    @Value( "${demowallet.client.rounds_per_thread}" )
+    @Value("${demowallet.client.rounds_per_thread}")
     private Integer roundsPerThread;
+    @Value("${demowallet.client.grpc_channel}")
+    private String grpcChannel;
 
     public void run() {
-        for (int i = 0; i < numberOfUsers; i++) {
-            createTreadsForUser(i);
+        if (grpcChannel.equals("local")) {
+            createUsersAndExecuteRounds();
         }
     }
 
-    private void createTreadsForUser(int userId) {
+    private void createUsersAndExecuteRounds() {
+        //setting up users in single thread, alternatively could have been pre-setup by SQL inserts
+        registerAll();
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        for (int i = 1; i <= numberOfUsers; i++) {
+            createTreadsForUser(i, executorService);
+        }
+    }
+
+    private void registerAll() {
+        for (int i = 1; i <= numberOfUsers; i++) {
+            channel.register(i);
+        }
+    }
+
+    private void createTreadsForUser(int userId, ExecutorService executorService) {
         for (int j = 0; j < threadsPerUser; j++) {
-            ExecutorService executorService = Executors.newCachedThreadPool();
             executeRoundsPerThread(executorService, userId);
         }
     }

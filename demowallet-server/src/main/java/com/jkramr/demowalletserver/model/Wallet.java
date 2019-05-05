@@ -30,12 +30,12 @@ public class Wallet {
         this.currency = currency;
     }
 
-    public Double getAmount() {
-        return amount;
+    public Double getBalance() {
+        return balance;
     }
 
-    public void setAmount(Double amount) {
-        this.amount = amount;
+    public void setBalance(Double balance) {
+        this.balance = balance;
     }
 
     @Column(name = "created", updatable = false)
@@ -55,6 +55,12 @@ public class Wallet {
     @Enumerated(EnumType.STRING)
     private Currency currency;
 
-    @Column(name = "amount", nullable = false)
-    private Double amount;
+    @Column(name = "balance", nullable = false)
+    private Double balance;
+
+    public void debit(Double withdrawAmount) {
+        if (balance >= withdrawAmount) {
+            balance = balance - withdrawAmount;
+        }
+    }
 }
