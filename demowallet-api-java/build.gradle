@@ -1,6 +1,7 @@
 plugins {
 	id 'java'
 	id 'idea'
+	id 'maven'
 	id "com.google.protobuf" version "0.8.8"
 }
 
@@ -10,10 +11,6 @@ sourceCompatibility = '12'
 
 def grpcVersion = '1.20.0'
 def protoVersion = '3.7.1'
-
-repositories {
-	mavenCentral()
-}
 
 dependencies {
 	compile("io.grpc:grpc-netty:${grpcVersion}")
@@ -41,7 +38,7 @@ protobuf {
 			grpc {}
 		}
 	}
-	generatedFilesBaseDir = "$projectDir/build/classes"
+	generatedFilesBaseDir = "$projectDir/build/generated/sources/grpc"
 }
 
 sourceSets {
@@ -53,6 +50,13 @@ sourceSets {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = "sources"
 	from sourceSets.main.allSource
+}
+
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			repository(url: mavenLocal().getUrl())
+		}
+	}
 }

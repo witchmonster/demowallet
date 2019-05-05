@@ -10,10 +10,6 @@ group = 'com.jkramr'
 version = '0.0.1'
 sourceCompatibility = '12'
 
-repositories {
-	mavenCentral()
-}
-
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
