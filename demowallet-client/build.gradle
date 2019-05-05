@@ -14,7 +14,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	compile 'net.devh:grpc-client-spring-boot-starter:2.3.0.RELEASE'
-	compile files('../demowallet-api-java/build/libs/demowallet-api-java-0.0.1.jar')
+	compile project(':demowallet-api-java')
 }
 
 bootRun {

@@ -15,8 +15,5 @@ dependencies {
 	runtimeOnly 'mysql:mysql-connector-java'
 	compile 'net.devh:grpc-spring-boot-starter:2.3.0.RELEASE'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
-	//workaround - normally I'd install the api jar into nexus or artifactory and use something like
-	//compile 'com.jkramr.demowallet-api-java:0.0.1'
-	compile files('../demowallet-api-java/build/libs/demowallet-api-java-0.0.1.jar')
+	compile project (":demowallet-api-java")
 }
