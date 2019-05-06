@@ -1,7 +1,34 @@
 version: '3'
 
 services:
-  mysql:
+#  demowallet-client-app:
+#    image: demowallet-client-app:1
+#    build:
+#      context: demowallet-client
+#      dockerfile: Dockerfile
+#    volumes:
+#      - /data/demowallet-client-app
+#    depends_on:
+#      - demowallet-server-app
+#    environment:
+#      - GRPC_CLIENT_LOCAL_ADDRESS=static://demowallet-server-app:9090
+#      - GRPC_CLIENT_LOCAL_NEGOTIATIONTYPE=PLAINTEXT
+#  demowallet-server-app:
+#    image: demowallet-server-app:1
+#    build:
+#      context: demowallet-server
+#      dockerfile: Dockerfile
+#    depends_on:
+#      - walletdb
+#    volumes:
+#      - /data/demowallet-server-app
+#    ports:
+#      - "9090:9090"
+#    environment:
+#      - SPRING_DATASOURCE_URL=jdbc:mysql://walletdb:3306/walletdb?useSSL=false
+#      - SPRING_DATASOURCE_USERNAME=wallet
+#      - SPRING_DATASOURCE_PASSWORD=demo
+  walletdb:
     image: mysql:5.7
     restart: always
     environment:
@@ -11,29 +38,8 @@ services:
       MYSQL_PASSWORD: 'demo'
     ports:
       - "3306:3306"
-    expose:
-      - '3306'
     volumes:
       - walletdb:/var/lib/mysql
-#  demowallet-server-app:
-#    image: demowallet-server-app:1
-#    build:
-#      context: demowallet-server
-#      dockerfile: Dockerfile
-#    links:
-#      - mysql
-#    volumes:
-#      - /data/demowallet-server-app
-#    ports:
-#      - "8081:8081"
-#  demowallet-client-app:
-#    image: demowallet-client-app:1
-#    build:
-#      context: demowallet-client
-#      dockerfile: Dockerfile
-#    volumes:
-#      - /data/demowallet-client-app
-#    ports:
-#      - "8082:8082"
+      - ./demowallet-server/src/sql:/docker-entrypoint-initdb.d
 volumes:
   walletdb:

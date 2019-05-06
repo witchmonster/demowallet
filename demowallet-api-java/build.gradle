@@ -8,7 +8,7 @@ group = 'com.jkramr'
 version = '0.0.1'
 sourceCompatibility = '12'
 
-def grpcVersion = '1.20.0'
+def grpcVersion = '1.18.0'
 def protoVersion = '3.7.1'
 
 dependencies {

@@ -5,8 +5,10 @@ import com.jkramr.demowalletapi.model.Common;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 @Component
-public class GrpcChannel {
+public class TestGrpcChannel {
 
     @GrpcClient("local")
     private RegisterServiceGrpc.RegisterServiceBlockingStub registerService;
@@ -17,6 +19,7 @@ public class GrpcChannel {
     @GrpcClient("local")
     private DepositServiceGrpc.DepositServiceBlockingStub depositService;
 
+    private AtomicLong callCount = new AtomicLong();
 
     void deposit(int userId, Common.Currency currency, double amount) {
         Deposit.DepositRequest request = Deposit.DepositRequest.newBuilder()
@@ -25,6 +28,7 @@ public class GrpcChannel {
                 .setAmount(amount)
                 .build();
         depositService.depositFunds(request);
+        callCount.incrementAndGet();
     }
 
     void withdraw(int userId, Common.Currency currency, double amount) {
@@ -34,6 +38,7 @@ public class GrpcChannel {
                 .setAmount(amount)
                 .build();
         withdrawService.withdrawFunds(request);
+        callCount.incrementAndGet();
     }
 
     void getBalance(int userId) {
@@ -41,6 +46,7 @@ public class GrpcChannel {
                 .setUserId(userId)
                 .build();
         balanceService.getBalance(request);
+        callCount.incrementAndGet();
     }
 
     void register(int userId) {
@@ -48,5 +54,10 @@ public class GrpcChannel {
                 .setUserId(userId)
                 .build();
         registerService.register(request);
+        callCount.incrementAndGet();
+    }
+
+    public AtomicLong getCallCount() {
+        return callCount;
     }
 }
