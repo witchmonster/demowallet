@@ -1,5 +1,22 @@
-###Installation
+#Installation
 
+##Docker Compose
+
+Fast bootstrap (but less control).
+
+1. Clone this repository
+2. `$ ./gradlew build`
+3. `$ docker-compose up -d`
+
+Done.
+
+You can use `$ WALLET_USERS=500 CONCURRENT_THREADS_PER_USER=2 ROUNDS_PER_THREAD=3 docker-compose up -d` for configuring threads.
+
+##Gradle :bootRun
+
+This option provides more control, but needs a few commands more.
+
+You will still need docker for this one to start MySQL database.
 1. Clone this repository
 2. Install docker and docker-compose
 3. In project root: 

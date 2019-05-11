@@ -1,33 +1,37 @@
 version: '3'
 
 services:
-#  demowallet-client-app:
-#    image: demowallet-client-app:1
-#    build:
-#      context: demowallet-client
-#      dockerfile: Dockerfile
-#    volumes:
-#      - /data/demowallet-client-app
-#    depends_on:
-#      - demowallet-server-app
-#    environment:
-#      - GRPC_CLIENT_LOCAL_ADDRESS=static://demowallet-server-app:9090
-#      - GRPC_CLIENT_LOCAL_NEGOTIATIONTYPE=PLAINTEXT
-#  demowallet-server-app:
-#    image: demowallet-server-app:1
-#    build:
-#      context: demowallet-server
-#      dockerfile: Dockerfile
-#    depends_on:
-#      - walletdb
-#    volumes:
-#      - /data/demowallet-server-app
-#    ports:
-#      - "9090:9090"
-#    environment:
-#      - SPRING_DATASOURCE_URL=jdbc:mysql://walletdb:3306/walletdb?useSSL=false
-#      - SPRING_DATASOURCE_USERNAME=wallet
-#      - SPRING_DATASOURCE_PASSWORD=demo
+  demowallet-client-app:
+    image: demowallet-client-app:1
+    build:
+      context: demowallet-client
+      dockerfile: Dockerfile
+    volumes:
+      - /data/demowallet-client-app
+    depends_on:
+      - demowallet-server-app
+    environment:
+      - DEMOWALLET_CLIENT_USERS=${WALLET_USERS}
+      - DEMOWALLET_CLIENT_CONCURRENT_THREADS_PER_USER=${CONCURRENT_THREADS_PER_USER}
+      - DEMOWALLET_CLIENT_ROUNDS_PER_THREAD=${ROUNDS_PER_THREAD}
+      - DEMOWALLET_CLIENT_PERFINFO=true
+      - GRPC_CLIENT_LOCAL_ADDRESS=static://demowallet-server-app:9090
+      - GRPC_CLIENT_LOCAL_NEGOTIATIONTYPE=PLAINTEXT
+  demowallet-server-app:
+    image: demowallet-server-app:1
+    build:
+      context: demowallet-server
+      dockerfile: Dockerfile
+    depends_on:
+      - walletdb
+    volumes:
+      - /data/demowallet-server-app
+    ports:
+      - "9090:9090"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://walletdb:3306/walletdb?useSSL=false
+      - SPRING_DATASOURCE_USERNAME=wallet
+      - SPRING_DATASOURCE_PASSWORD=demo
   walletdb:
     image: mysql:5.7
     restart: always
