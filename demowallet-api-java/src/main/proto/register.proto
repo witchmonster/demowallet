@@ -3,6 +3,7 @@ syntax = "proto3";
 option java_package = "com.jkramr.demowalletapi.grpc";
 
 service RegisterService {
+    //this call is idempotent: multiple calls will have the same outcome as single call
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
 }
 
@@ -11,5 +12,10 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-    string debugMessage = 2;
+    enum ResponseCode {
+        OK = 0;
+        INVALID_REQUEST = 1;
+        SERVER_ERROR = 999;
+    }
+    ResponseCode code = 1;
 }

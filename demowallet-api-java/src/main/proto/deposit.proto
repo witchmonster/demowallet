@@ -15,9 +15,12 @@ message DepositRequest {
 }
 
 message DepositResponse {
-    enum Error {
-        UNKNOWN_CURRENCY = 0;
+    enum ResponseCode {
+        OK = 0;
+        INVALID_REQUEST = 1;
+        UNKNOWN_CURRENCY = 2;
+        WALLET_NOT_FOUND = 3;
+        SERVER_ERROR = 999;
     }
-    Error error = 1;
-    string debugMessage = 2;
+    ResponseCode code = 1;
 }

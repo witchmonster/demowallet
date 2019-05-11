@@ -1,47 +1,39 @@
-package com.jkramr.demowalletclient.service;
+package com.jkramr.demowalletclient.service.emulator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.jkramr.demowalletclient.service.grpc.GrpcChannel;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Component
-public class EmulatorService {
+public class ThreadedEmulatorService<T extends GrpcChannel> implements EmulatorService {
 
     public static final String DATE_FORMAT = "YYYY-MM-dd hh:mm:ss SSS";
-    private Logger logger = LoggerFactory.getLogger(EmulatorService.class);
+    public static final String GRPC_CHANNEL_LOCAL = "local";
 
-    @Autowired
-    public EmulatorService(RoundFactory roundFactory, TestGrpcChannel channel) {
+    public ThreadedEmulatorService(RoundEmulatorFactory roundFactory, T channel) {
         this.roundFactory = roundFactory;
         this.channel = channel;
     }
 
-    private RoundFactory roundFactory;
-    private TestGrpcChannel channel;
+    private final RoundEmulatorFactory roundFactory;
+    final T channel;
 
     @Value("${demowallet.client.users}")
-    private Integer numberOfUsers;
+    protected Integer numberOfUsers;
     @Value("${demowallet.client.concurrent_threads_per_user}")
-    private Integer threadsPerUser;
+    protected Integer threadsPerUser;
     @Value("${demowallet.client.rounds_per_thread}")
-    private Integer roundsPerThread;
+    protected Integer roundsPerThread;
     @Value("${demowallet.client.grpc_channel}")
-    private String grpcChannel;
+    protected String grpcChannel;
 
-    public void run() {
-        if (grpcChannel.equals("local")) {
-            logger.info("Opening channel LOCAL");
+    @Override
+    public void start() {
+        if (grpcChannel.equals(GRPC_CHANNEL_LOCAL)) {
             createUsersAndExecuteRounds();
         }
     }
@@ -54,8 +46,7 @@ public class EmulatorService {
         executeTasks(executorService);
     }
 
-    private void registerAll(ExecutorService executorService) {
-        logger.info("User count: {}. Pre-registering users...", numberOfUsers);
+    protected void registerAll(ExecutorService executorService) {
         List<Callable<Boolean>> threads = new ArrayList<>();
         for (int i = 1; i <= numberOfUsers; i++) {
             addRegisterThread(threads, i);
@@ -65,13 +56,9 @@ public class EmulatorService {
         } catch (InterruptedException e) {
             executorService.shutdown();
         }
-        logger.info("Register complete.");
     }
 
-    private void executeTasks(ExecutorService executorService) {
-        logger.info("Starting thread execution for {} users, {} threads per user, {} rounds per thread.", numberOfUsers, threadsPerUser, roundsPerThread);
-        LocalDateTime startTime = LocalDateTime.now();
-        logger.info("Started at {}", startTime.format(DateTimeFormatter.ofPattern(DATE_FORMAT)));
+    protected void executeTasks(ExecutorService executorService) {
         List<Callable<Boolean>> threads = new ArrayList<>();
         for (int i = 1; i <= numberOfUsers; i++) {
             addThreadsPerUser(threads, i);
@@ -82,14 +69,10 @@ public class EmulatorService {
             executorService.shutdown();
         }
         executorService.shutdown();
-        LocalDateTime endTime = LocalDateTime.now();
-        logger.info("Completed at {}", endTime.format(DateTimeFormatter.ofPattern(DATE_FORMAT)));
-        logger.info("{} API calls executed in {} concurrent threads in {} milliseconds", channel.getCallCount(), numberOfUsers * threadsPerUser, Duration.between(startTime, endTime).toMillis());
     }
 
     private void addThreadsPerUser(List<Callable<Boolean>> threads, int userId) {
         for (int j = 0; j < threadsPerUser; j++) {
-            logger.debug("Executing thread {} for user {}", j, userId);
             threads.add(createRounds(userId));
         }
     }

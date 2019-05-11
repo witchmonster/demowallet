@@ -1,14 +1,12 @@
-package com.jkramr.demowalletclient.service;
+package com.jkramr.demowalletclient.service.grpc;
 
 import com.jkramr.demowalletapi.grpc.*;
 import com.jkramr.demowalletapi.model.Common;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 @Component
-public class TestGrpcChannel {
+public class LocalGrpcChannel implements GrpcChannel {
 
     @GrpcClient("local")
     private RegisterServiceGrpc.RegisterServiceBlockingStub registerService;
@@ -19,45 +17,39 @@ public class TestGrpcChannel {
     @GrpcClient("local")
     private DepositServiceGrpc.DepositServiceBlockingStub depositService;
 
-    private AtomicLong callCount = new AtomicLong();
-
-    void deposit(int userId, Common.Currency currency, double amount) {
+    @Override
+    public Deposit.DepositResponse deposit(int userId, Common.Currency currency, double amount) {
         Deposit.DepositRequest request = Deposit.DepositRequest.newBuilder()
                 .setUserId(userId)
                 .setCurrency(currency)
                 .setAmount(amount)
                 .build();
-        depositService.depositFunds(request);
-        callCount.incrementAndGet();
+        return depositService.depositFunds(request);
     }
 
-    void withdraw(int userId, Common.Currency currency, double amount) {
+    @Override
+    public Withdraw.WithdrawResponse withdraw(int userId, Common.Currency currency, double amount) {
         Withdraw.WithdrawRequest request = Withdraw.WithdrawRequest.newBuilder()
                 .setUserId(userId)
                 .setCurrency(currency)
                 .setAmount(amount)
                 .build();
-        withdrawService.withdrawFunds(request);
-        callCount.incrementAndGet();
+        return withdrawService.withdrawFunds(request);
     }
 
-    void getBalance(int userId) {
+    @Override
+    public Balance.BalanceResponse getBalance(int userId) {
         Balance.BalanceRequest request = Balance.BalanceRequest.newBuilder()
                 .setUserId(userId)
                 .build();
-        balanceService.getBalance(request);
-        callCount.incrementAndGet();
+        return balanceService.getBalance(request);
     }
 
-    void register(int userId) {
+    @Override
+    public Register.RegisterResponse register(int userId) {
         Register.RegisterRequest request = Register.RegisterRequest.newBuilder()
                 .setUserId(userId)
                 .build();
-        registerService.register(request);
-        callCount.incrementAndGet();
-    }
-
-    public AtomicLong getCallCount() {
-        return callCount;
+        return registerService.register(request);
     }
 }

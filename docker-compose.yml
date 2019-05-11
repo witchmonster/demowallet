@@ -40,6 +40,5 @@ services:
       - "3306:3306"
     volumes:
       - walletdb:/var/lib/mysql
-      - ./demowallet-server/src/sql:/docker-entrypoint-initdb.d
 volumes:
   walletdb:

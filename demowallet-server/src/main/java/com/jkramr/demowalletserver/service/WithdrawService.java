@@ -1,91 +1,64 @@
 package com.jkramr.demowalletserver.service;
 
 import com.jkramr.demowalletapi.grpc.Withdraw;
-import com.jkramr.demowalletapi.grpc.WithdrawServiceGrpc;
-import com.jkramr.demowalletapi.model.Common;
+import com.jkramr.demowalletserver.repository.WalletManagedRepository;
 import com.jkramr.demowalletserver.model.Currency;
 import com.jkramr.demowalletserver.model.Wallet;
 import com.jkramr.demowalletserver.repository.WalletRepository;
-import io.grpc.stub.StreamObserver;
-import net.devh.boot.grpc.server.service.GrpcService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.jkramr.demowalletserver.service.validators.WithdrawRequestValidator;
+import com.jkramr.demowalletserver.systemdata.SystemData;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static com.jkramr.demowalletapi.grpc.Withdraw.WithdrawResponse.newBuilder;
 
-@GrpcService
-@Transactional(isolation = Isolation.SERIALIZABLE)
-public class WithdrawService extends WithdrawServiceGrpc.WithdrawServiceImplBase {
+@Component
+public class WithdrawService extends AbstractService<Withdraw.WithdrawRequest, Withdraw.WithdrawResponse> {
 
     private WalletRepository walletRepository;
-    private Logger logger = LoggerFactory.getLogger(WithdrawService.class);
+    private final TransactionTemplate transactionTemplate;
+    private final SystemData systemData;
 
     @Autowired
-    public WithdrawService(WalletRepository walletRepository) {
+    public WithdrawService(
+            WalletManagedRepository walletRepository,
+            WithdrawRequestValidator requestValidator,
+            PlatformTransactionManager transactionManager,
+            SystemData systemData
+    ) {
+        super(requestValidator);
         this.walletRepository = walletRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.systemData = systemData;
     }
 
     @Override
-    public void withdrawFunds(Withdraw.WithdrawRequest request, StreamObserver<Withdraw.WithdrawResponse> responseObserver) {
-        Withdraw.WithdrawResponse response = onInvalidRequest(request)
-                .orElseGet(() -> doWithdraw(request));
-        logger.info("WITHDRAW user_id={}, {} {} => {}", request.getUserId(), request.getAmount(), request.getCurrency(), response.getDebugMessage());
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
-    }
-
-    private Optional<Withdraw.WithdrawResponse> onInvalidRequest(Withdraw.WithdrawRequest request) {
+    protected Withdraw.WithdrawResponse doProcess(Withdraw.WithdrawRequest request) {
         Withdraw.WithdrawResponse.Builder response = newBuilder();
-        if (request.getUserId() <= 0) {
-            return Optional.of(response.setDebugMessage(request.getUserId() == 0 ? "user id empty" : "user id invalid").build());
+        if (systemData.getCurrency(request.getCurrency().name()).isEmpty()) {
+            return response.setCode(Withdraw.WithdrawResponse.ResponseCode.UNKNOWN_CURRENCY).build();
         }
+        transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
+        return transactionTemplate.execute(status -> {
+            Optional<Wallet> wallet = walletRepository.findByUserIdAndCurrency(request.getUserId(), Currency.of(request.getCurrency()));
 
-        if (!isValidWithdrawAmount(request)) {
-            //according to the Task, we don't throw any invalid amount related errors, so just returning empty response in this case
-            return Optional.of(response.setDebugMessage("invalid deposit amount").build());
-        }
+            if (wallet.isEmpty()) {
+                return response.setCode(Withdraw.WithdrawResponse.ResponseCode.WALLET_NOT_FOUND).build();
+            }
 
-        if (!isValidCurrency(request.getCurrency())) {
-            //the only possible scenario when this error will be thrown is incompatible versions of api for client and server (demowallet-api-java)
-            //and client api contains a currency, which has been removed in server API
-            return Optional.of(response.setError(Withdraw.WithdrawResponse.Error.UNKNOWN_CURRENCY).build());
-        }
+            if (wallet.filter(w -> w.getBalance() >= (Double) request.getAmount()).isEmpty()) {
+                return response.setCode(Withdraw.WithdrawResponse.ResponseCode.INSUFFICIENT_FUNDS).build();
+            }
 
-        return Optional.empty();
-    }
+            wallet.ifPresent(w -> walletRepository.debit(w, request.getAmount()));
 
-    private Withdraw.WithdrawResponse doWithdraw(Withdraw.WithdrawRequest request) {
-        Withdraw.WithdrawResponse.Builder response = newBuilder();
-        int userId = request.getUserId();
-        Double withdrawAmount = request.getAmount();
-        Common.Currency currency = request.getCurrency();
-
-        Optional<Wallet> walletWithSufficientFunds = walletRepository.findByUserIdAndCurrency(userId, Currency.of(currency))
-                .filter(wallet -> wallet.getBalance() >= withdrawAmount);
-
-        if (walletWithSufficientFunds.isEmpty()) {
-            response.setDebugMessage("Insufficient funds");
-            return response.setError(Withdraw.WithdrawResponse.Error.INSUFFICIENT_FUNDS).build();
-        }
-
-        Wallet wallet = walletWithSufficientFunds.get();
-        wallet.debit(withdrawAmount);
-
-        return response.setDebugMessage("Ok").build();
-    }
-
-    private boolean isValidWithdrawAmount(Withdraw.WithdrawRequest request) {
-        return request.getAmount() >= 0;
-    }
-
-    private boolean isValidCurrency(Common.Currency currency) {
-        return Arrays.stream(Currency.values()).map(Currency::name).anyMatch(c -> c.equals(currency.name()));
+            return response.setCode(Withdraw.WithdrawResponse.ResponseCode.OK).build();
+        });
     }
 
 }

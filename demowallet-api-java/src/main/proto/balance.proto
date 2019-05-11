@@ -12,12 +12,17 @@ message BalanceRequest {
     int32 user_id = 1;
 }
 
-message WalletBalance {
+message BalanceInfo {
     Currency currency = 1;
     double amount = 2;
 }
 
 message BalanceResponse {
-    repeated WalletBalance balanceInfo = 1;
-    string debugMessage = 2;
+    enum ResponseCode {
+        OK = 0;
+        INVALID_REQUEST = 1;
+        SERVER_ERROR = 999;
+    }
+    ResponseCode code = 1;
+    repeated BalanceInfo balanceInfo = 2;
 }

@@ -1,99 +1,60 @@
 package com.jkramr.demowalletserver.service;
 
 import com.jkramr.demowalletapi.grpc.Deposit;
-import com.jkramr.demowalletapi.grpc.DepositServiceGrpc;
-import com.jkramr.demowalletapi.model.Common;
+import com.jkramr.demowalletapi.grpc.Deposit.DepositRequest;
+import com.jkramr.demowalletapi.grpc.Deposit.DepositResponse;
+import com.jkramr.demowalletserver.repository.WalletManagedRepository;
+import com.jkramr.demowalletserver.repository.WalletRepository;
+import com.jkramr.demowalletserver.service.validators.DepositRequestValidator;
 import com.jkramr.demowalletserver.model.Currency;
 import com.jkramr.demowalletserver.model.Wallet;
-import com.jkramr.demowalletserver.repository.WalletRepository;
-import io.grpc.stub.StreamObserver;
-import net.devh.boot.grpc.server.service.GrpcService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
+import com.jkramr.demowalletserver.systemdata.SystemData;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static com.jkramr.demowalletapi.grpc.Deposit.DepositResponse.newBuilder;
 
-@GrpcService
-@Transactional(isolation = Isolation.SERIALIZABLE)
-public class DepositService extends DepositServiceGrpc.DepositServiceImplBase {
+@Component
+public class DepositService extends AbstractService<DepositRequest, DepositResponse> {
 
     private WalletRepository walletRepository;
-    private Logger logger = LoggerFactory.getLogger(DepositService.class);
+    private final TransactionTemplate transactionTemplate;
+    private final SystemData systemData;
 
-    @Autowired
-    public DepositService(WalletRepository walletRepository) {
+    public DepositService(
+            WalletManagedRepository walletRepository,
+            DepositRequestValidator requestValidator,
+            PlatformTransactionManager transactionManager,
+            SystemData systemData
+    ) {
+        super(requestValidator);
         this.walletRepository = walletRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.systemData = systemData;
     }
 
     @Override
-    public void depositFunds(Deposit.DepositRequest request, StreamObserver<Deposit.DepositResponse> responseObserver) {
-        Deposit.DepositResponse.Builder response = onInvalidRequest(request)
-                .orElseGet(() -> doDeposit(request));
-        logger.info("DEPOSIT user_id={}, {} {} => {}", request.getUserId(), request.getAmount(), request.getCurrency(), response.getDebugMessage());
-        responseObserver.onNext(response.build());
-        responseObserver.onCompleted();
-    }
-
-    private Optional<Deposit.DepositResponse.Builder> onInvalidRequest(Deposit.DepositRequest request) {
-        Deposit.DepositResponse.Builder response = newBuilder();
-        if (request.getUserId() <= 0) {
-            return Optional.of(response.setDebugMessage(request.getUserId() == 0 ? "Empty user_id empty" : "Invalid user_id"));
+    protected DepositResponse doProcess(DepositRequest request) {
+        DepositResponse.Builder response = newBuilder();
+        if (systemData.getCurrency(request.getCurrency().name()).isEmpty()) {
+            return response.setCode(Deposit.DepositResponse.ResponseCode.UNKNOWN_CURRENCY).build();
         }
 
-        if (!isValidDepositAmount(request)) {
-            //according to the Task, we don't throw any invalid amount related errors, so just returning empty response in this case
-            return Optional.of(response.setDebugMessage("Invalid deposit amount"));
-        }
+        transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
+        return transactionTemplate.execute(status -> {
+            Optional<Wallet> wallet = walletRepository.findByUserIdAndCurrency(request.getUserId(), Currency.of(request.getCurrency()));
 
-        if (!isValidCurrency(request.getCurrency())) {
-            response.setDebugMessage("Unknown currency");
-            return Optional.of(response.setError(Deposit.DepositResponse.Error.UNKNOWN_CURRENCY));
-        }
+            if (wallet.isEmpty()) {
+                return response.setCode(DepositResponse.ResponseCode.WALLET_NOT_FOUND).build();
+            }
 
-        return Optional.empty();
-    }
-
-    private Deposit.DepositResponse.Builder doDeposit(Deposit.DepositRequest request) {
-        Deposit.DepositResponse.Builder response = newBuilder();
-        int userId = request.getUserId();
-        Common.Currency currency = request.getCurrency();
-
-        boolean isSuccessful = deposit(userId, currency, request.getAmount());
-
-        return response.setDebugMessage(isSuccessful ? "Ok" : "Failed");
-    }
-
-    private boolean isValidDepositAmount(Deposit.DepositRequest request) {
-        return request.getAmount() >= 0;
-    }
-
-    private boolean isValidCurrency(Common.Currency currency) {
-        return Arrays.stream(Currency.values()).map(Currency::name).anyMatch(c -> c.equals(currency.name()));
-    }
-
-    boolean deposit(Integer userId, Common.Currency currency, Double depositAmount) {
-        //since no wallet creation specified by the Task, creating one silently on deposit action
-        Wallet wallet = walletRepository.findByUserIdAndCurrency(userId, Currency.of(currency))
-                .orElseGet(() -> createNewWallet(userId, currency));
-
-        double finalAmount = wallet.getBalance() + depositAmount;
-        wallet.setBalance(finalAmount);
-
-        return true;
-    }
-
-    private Wallet createNewWallet(Integer userId, Common.Currency currency) {
-        Wallet wallet = new Wallet();
-        wallet.setUserId(userId);
-        wallet.setBalance(0.0);
-        wallet.setCurrency(Currency.of(currency));
-        return walletRepository.save(wallet);
+            wallet.ifPresent(w -> walletRepository.credit(w, request.getAmount()));
+            return response.setCode(DepositResponse.ResponseCode.OK).build();
+        });
     }
 
 }

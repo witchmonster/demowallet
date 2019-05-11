@@ -14,8 +14,13 @@ public class Wallet {
     @Column(name = "id")
     private Integer id;
 
-    public Integer getUserId() {
-        return userId;
+    public Wallet() {
+    }
+
+    public Wallet(Integer userId, Currency currency, double balance) {
+        this.userId = userId;
+        this.currency = currency;
+        this.balance = balance;
     }
 
     public void setUserId(Integer userId) {
@@ -51,16 +56,10 @@ public class Wallet {
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
-    @Column(name = "currency", nullable = false)
+    @Column(name = "currency", length = 3, nullable = false)
     @Enumerated(EnumType.STRING)
     private Currency currency;
 
     @Column(name = "balance", nullable = false)
     private Double balance;
-
-    public void debit(Double withdrawAmount) {
-        if (balance >= withdrawAmount) {
-            balance = balance - withdrawAmount;
-        }
-    }
 }

@@ -1,8 +1,9 @@
-package com.jkramr.demowalletserver;
+package com.jkramr.demowalletserver.integration;
 
 import com.jkramr.demowalletapi.grpc.*;
 import com.jkramr.demowalletapi.model.Common;
 import com.jkramr.demowalletserver.repository.WalletRepository;
+import com.jkramr.demowalletserver.systemdata.*;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,8 +14,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties = {"grpc.client.wallet.address=static://localhost:9090", "grpc.client.wallet.negotiationType=PLAINTEXT"})
-public class DemowalletServerApplicationTests {
+@SpringBootTest
+public class DemowalletIntegrationTests {
 
     @GrpcClient("wallet")
     private RegisterServiceGrpc.RegisterServiceBlockingStub registerStub;
@@ -29,14 +30,22 @@ public class DemowalletServerApplicationTests {
     private WithdrawServiceGrpc.WithdrawServiceBlockingStub withdrawStub;
 
     @Autowired
-    WalletRepository walletRepository;
+    private WalletRepository walletRepository;
+
+    @Autowired
+    private SystemData systemData;
 
     @Before
     public void setUp() {
         //given there's no registration method described in the Task, I assume users are registered prior to any task execution
         walletRepository.deleteAll();
-        registerStub.register(Register.RegisterRequest.newBuilder().setUserId(1).build());
-        registerStub.register(Register.RegisterRequest.newBuilder().setUserId(2).build());
+        addWalletsForUser(1);
+        addWalletsForUser(2);
+    }
+
+    private void addWalletsForUser(Integer id) {
+        systemData.getAllCurrencies()
+                .forEach(currency -> walletRepository.insertOne(id, currency));
     }
 
     @Test
@@ -44,44 +53,39 @@ public class DemowalletServerApplicationTests {
     }
 
     @Test
-    public void taskIntegrationTest() {
+    public void givenNewUserShouldRegister() {
+        register(3).assertSuccessful();
+        getBalance(3)
+                .forCurrency(Common.Currency.EUR).amountEquals(0)
+                .forCurrency(Common.Currency.USD).amountEquals(0)
+                .forCurrency(Common.Currency.GBP).amountEquals(0);
+    }
+
+    @Test
+    public void taskSpecifiedIntegrationTest() {
         withdrawFunds(1, Common.Currency.USD, 200).assertInsufficientFunds();
         depositFunds(1, Common.Currency.USD, 100).assertSuccessful();
         getBalance(1)
-                .forCurrency(Common.Currency.USD)
-                .amountEquals(100)
-                .assertBalances();
+                .forCurrency(Common.Currency.USD).amountEquals(100);
         withdrawFunds(1, Common.Currency.USD, 200).assertInsufficientFunds();
         depositFunds(1, Common.Currency.EUR, 100).assertSuccessful();
         getBalance(1)
                 .forCurrency(Common.Currency.USD).amountEquals(100)
-                .forCurrency(Common.Currency.EUR).amountEquals(100)
-                .assertBalances();
+                .forCurrency(Common.Currency.EUR).amountEquals(100);
         withdrawFunds(1, Common.Currency.USD, 200).assertInsufficientFunds();
         depositFunds(1, Common.Currency.USD, 100).assertSuccessful();
         withdrawFunds(1, Common.Currency.USD, 200).assertSuccessful();
         getBalance(1)
                 .forCurrency(Common.Currency.USD).amountEquals(0)
-                .forCurrency(Common.Currency.EUR).amountEquals(100)
-                .assertBalances();
+                .forCurrency(Common.Currency.EUR).amountEquals(100);
         withdrawFunds(1, Common.Currency.USD, 200).assertInsufficientFunds();
     }
 
     @Test
-    public void givenNoWalletGetBalanceShouldReturnEmptyResult() {
-        getBalance(1)
-                .forCurrency(Common.Currency.USD).amountEquals(0)
-                .forCurrency(Common.Currency.EUR).amountEquals(0)
-                .forCurrency(Common.Currency.GBP).amountEquals(0)
-                .assertBalances();
-    }
-
-    @Test
-    public void givenNoWalletShouldCreateDepositAndWithdrawSuccessfully() {
-        depositFunds(1, Common.Currency.EUR, 100).assertSuccessful();
-        getBalance(1).forCurrency(Common.Currency.EUR).amountEquals(100).assertBalances();
-        withdrawFunds(1, Common.Currency.EUR, 50).assertSuccessful();
-        getBalance(1).forCurrency(Common.Currency.EUR).amountEquals(50).assertBalances();
+    public void givenUnregisteredUserShouldReturnWalletNotFound() {
+        getBalance(4).assertResponseIsEmpty();
+        depositFunds(4, Common.Currency.USD, 100).assertWalletNotFound();
+        withdrawFunds(4, Common.Currency.USD, 100).assertWalletNotFound();
     }
 
     private DepositTestResult depositFunds(int userId, Common.Currency currency, double amount) {
@@ -93,7 +97,7 @@ public class DemowalletServerApplicationTests {
         return new DepositTestResult(depositStub.depositFunds(depositRequest));
     }
 
-    private WithdrawTestResult withdrawFunds(int userId, Common.Currency currency, int amount) {
+    private WithdrawTestResult withdrawFunds(int userId, Common.Currency currency, double amount) {
         Withdraw.WithdrawRequest withdrawRequest = Withdraw.WithdrawRequest.newBuilder()
                 .setUserId(userId)
                 .setCurrency(currency)
@@ -106,6 +110,11 @@ public class DemowalletServerApplicationTests {
     private BalanceTestResult getBalance(int userId) {
         Balance.BalanceRequest request = Balance.BalanceRequest.newBuilder().setUserId(userId).build();
         return new BalanceTestResult(balanceStub.getBalance(request));
+    }
+
+    private RegisterTestResult register(int userId) {
+        Register.RegisterRequest request = Register.RegisterRequest.newBuilder().setUserId(userId).build();
+        return new RegisterTestResult(registerStub.register(request));
     }
 
 }
