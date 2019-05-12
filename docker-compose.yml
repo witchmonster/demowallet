@@ -14,8 +14,8 @@ services:
       - DEMOWALLET_CLIENT_USERS=${WALLET_USERS}
       - DEMOWALLET_CLIENT_CONCURRENT_THREADS_PER_USER=${CONCURRENT_THREADS_PER_USER}
       - DEMOWALLET_CLIENT_ROUNDS_PER_THREAD=${ROUNDS_PER_THREAD}
-      - DEMOWALLET_CLIENT_PERFINFO=true
-      - GRPC_CLIENT_LOCAL_ADDRESS=static://demowallet-server-app:9090
+      - DEMOWALLET_CLIENT_PERFINFO=${SHOW_PERFINFO}
+      - GRPC_CLIENT_LOCAL_ADDRESS=static://demowallet-server-app:9091
       - GRPC_CLIENT_LOCAL_NEGOTIATIONTYPE=PLAINTEXT
   demowallet-server-app:
     image: demowallet-server-app:1
@@ -27,8 +27,9 @@ services:
     volumes:
       - /data/demowallet-server-app
     ports:
-      - "9090:9090"
+      - "9091:9091"
     environment:
+      - GRPC_SERVER_PORT=9091
       - SPRING_DATASOURCE_URL=jdbc:mysql://walletdb:3306/walletdb?useSSL=false
       - SPRING_DATASOURCE_USERNAME=wallet
       - SPRING_DATASOURCE_PASSWORD=demo
