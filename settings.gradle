@@ -5,4 +5,4 @@ pluginManagement {
 }
 rootProject.name = 'demowallet'
 
-include ':demowallet-api-java', ':demowallet-client', ':demowallet-server'
+include ':demowallet-api-java', ':demowallet-client', ':demowallet-server', ':protomapper'

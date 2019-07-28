@@ -1,0 +1,44 @@
+plugins {
+	id 'java'
+	id 'idea'
+	id "com.google.protobuf" version "0.8.8"
+}
+
+group = 'com.jkramr'
+version = '0.0.1'
+sourceCompatibility = '12'
+
+def grpcVersion = '1.18.0'
+def protoVersion = '3.7.1'
+def mockitoVersion = '3.0.0'
+def lombokVersion = '1.18.8'
+def guavaVersion = '28.0-jre'
+
+dependencies {
+	compile "com.google.guava:guava:${guavaVersion}"
+	compileOnly("io.grpc:grpc-protobuf:${grpcVersion}")
+	implementation "org.projectlombok:lombok:${lombokVersion}"
+	testCompile "org.mockito:mockito-core:${mockitoVersion}"
+	testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+}
+
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:${protoVersion}"
+	}
+	plugins {
+		grpc {
+			artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+		}
+	}
+	generateProtoTasks {
+		all().each { task ->
+			task.builtins {
+				java { }
+			}
+		}
+		all()*.plugins {
+			grpc {}
+		}
+	}
+}
